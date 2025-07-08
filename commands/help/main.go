@@ -48,7 +48,7 @@ func help_command(session *discordgo.Session, message *discordgo.MessageCreate) 
 			fmt.Sprintf("%s%s%s\n-# %s\n\n", cmd_prefix, cmd.Name, usage_seg, cmd.Description)
 	}
 	hcmd_footer := fmt.Sprintf(
-		"Page %d  %d",
+		"Page %d of %d",
 		help_page,
 		max_pages,
 	)
