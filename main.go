@@ -52,7 +52,7 @@ func main() {
 		terminal.Start()
 	} else {
 		// capture os.Interrupt to prevent hard quitting
-		fmt.Println("Quit the program with CTRL + C.")
+		fmt.Println("Quit the program with CTRL + D.")
 		a := make(chan os.Signal, 1)
 		signal.Notify(a, os.Interrupt)
 		<-a

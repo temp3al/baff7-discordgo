@@ -21,7 +21,7 @@ func Start() {
 	signal.Notify(make(chan os.Signal), os.Interrupt)
 	fmt.Println(`
 Enter "help" for a list of available commands"
-Quit the program with CTRL + C or entering "quit".`)
+Quit the program with CTRL + D or entering "quit".`)
 	run := true
 
 	clr_in := func(message string) string {
@@ -59,7 +59,7 @@ Quit the program with CTRL + C or entering "quit".`)
 
 // Interpet commands sent via terminal.
 //
-// Return 0 on failure, 1 on success, -1 on quit.
+// Return -1 on failure, 0-1 on success, 100 on quit.
 func interpret(message string) (int, error) {
 
 	msgSplice := strings.Split(message, " ")
