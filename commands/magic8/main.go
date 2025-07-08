@@ -1,6 +1,6 @@
-// Help command.
+// 8ball command.
 //
-// Usage: /help [page]
+// Usage: /8ball (question)
 package magic8
 
 import (
