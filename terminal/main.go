@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -17,8 +19,9 @@ var (
 )
 
 type terminalCmd struct {
-	Name  string
-	Usage string
+	Name        string
+	Usage       string
+	Description string // pref. 1st person
 	// returns proper usage and error.
 	// if false, handler will print the proper usage of the command.
 	Handle func(args []string) (bool, error)
@@ -101,8 +104,46 @@ func register_cmd(cmd terminalCmd) {
 
 func init() {
 	register_cmd(terminalCmd{
-		Name:  "speak",
-		Usage: "(ChannelID) (Message...)",
+		Name:        "help",
+		Usage:       "",
+		Description: "Show this list.",
+		Handle: func(args []string) (bool, error) {
+			cmdlimit := 8
+			fpage := 1
+			fpage_max := int(math.Ceil(
+				float64(len(fcmds)) /
+					float64(cmdlimit),
+			))
+
+			if len(args) > 1 {
+				page, err := strconv.Atoi(args[1])
+				if err == nil && page > 0 {
+					fpage = min(page, fpage_max)
+				}
+			}
+
+			to_print := ""
+			for i, cmd := range fcmds {
+				if i < cmdlimit*(fpage-1) {
+					continue
+				} else if i+1 > cmdlimit*fpage {
+					break
+				}
+				tusage := ""
+				if len(cmd.Usage) > 1 {
+					tusage += fmt.Sprintf(" %s", cmd.Usage)
+				}
+				to_print += fmt.Sprintf("%s%s - %s\n", cmd.Name, tusage, cmd.Description)
+			}
+			to_print += fmt.Sprintf("\nPage %d of %d", fpage, fpage_max)
+			fmt.Println(to_print)
+			return true, nil
+		},
+	})
+	register_cmd(terminalCmd{
+		Name:        "speak",
+		Usage:       "(ChannelID) (Message...)",
+		Description: "Send a message to a channel.",
 		Handle: func(args []string) (bool, error) {
 			if len(args) < 2 {
 				return false, nil
