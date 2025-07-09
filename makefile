@@ -5,11 +5,15 @@
 # 	mkdir -p ${EXPORT_PATH}
 # 	go build -o ${EXPORT_PATH}${BUILD_NAME} -v
 
-.PHONY: run
+.PHONY: run no-terminal
 run:
-	@echo "Running executable..."
-	@go run main.go
+	@echo "Executing \"main.go\"..."
+	-go run main.go ||:
 
-dep:
+no-terminal:
+	@echo "Executing \"main.go\" with terminal disabled..."
+	-go run main.go --no-terminal ||:
+
+dependencies:
 	@echo "Getting dependencies..."
-	@go mod tidy
+	go mod tidy
