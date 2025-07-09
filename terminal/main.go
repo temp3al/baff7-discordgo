@@ -20,7 +20,7 @@ func Start() {
 	// capture os.Interrupt to prevent hard quitting
 	signal.Notify(make(chan os.Signal), os.Interrupt)
 	fmt.Println(`
-Enter "help" for a list of available commands"
+Enter "help" for a list of available commands
 Quit the program with CTRL + D or entering "quit".`)
 	run := true
 
