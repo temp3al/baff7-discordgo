@@ -5,7 +5,7 @@
 # 	mkdir -p ${EXPORT_PATH}
 # 	go build -o ${EXPORT_PATH}${BUILD_NAME} -v
 
-.PHONY: run no-terminal
+.PHONY: run no-terminal dependencies
 run:
 	@echo "Executing \"main.go\"..."
 	-go run main.go ||:

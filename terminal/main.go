@@ -51,7 +51,7 @@ Quit the program by pressing CTRL + D or entering "quit".`)
 		if err != nil { // soft print errors
 			log.Println(err)
 		}
-		// handle invalid commands & quitting
+		// handle commands & quitting
 		switch code {
 		case -1:
 			run = false
