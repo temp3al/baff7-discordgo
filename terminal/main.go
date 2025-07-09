@@ -17,8 +17,11 @@ var (
 )
 
 type terminalCmd struct {
-	Name   string
-	Handle func(args []string) error
+	Name  string
+	Usage string
+	// returns proper usage and error.
+	// if false, handler will print the proper usage of the command.
+	Handle func(args []string) (bool, error)
 }
 
 // Start our terminal loop.
@@ -74,7 +77,11 @@ func interpret(message string) (int, error) {
 
 	for _, tcmd := range fcmds {
 		if cmd == tcmd.Name {
-			return 1, tcmd.Handle(args)
+			ok, err := tcmd.Handle(args)
+			if !ok { // print command usage if formatted wrong
+				fmt.Printf("Usage: %s %s\n", tcmd.Name, tcmd.Usage)
+			}
+			return 1, err
 		}
 	}
 	if cmd == "quit" {
@@ -94,16 +101,16 @@ func register_cmd(cmd terminalCmd) {
 
 func init() {
 	register_cmd(terminalCmd{
-		Name: "speak",
-		Handle: func(args []string) error {
+		Name:  "speak",
+		Usage: "(ChannelID) (Message...)",
+		Handle: func(args []string) (bool, error) {
 			if len(args) < 2 {
-				fmt.Println("Usage: speak (channelID) (Message...)")
-				return nil
+				return false, nil
 			}
 			channel := args[0]
 			message := strings.Join(args[1:], " ")
 			_, err := Session.ChannelMessageSend(channel, message)
-			return err
+			return true, err
 		},
 	})
 }
