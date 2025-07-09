@@ -13,7 +13,13 @@ import (
 
 var (
 	Session *discordgo.Session
+	fcmds   []terminalCmd
 )
+
+type terminalCmd struct {
+	Name   string
+	Handle func(args []string) error
+}
 
 // Start our terminal loop.
 func Start() {
@@ -21,7 +27,7 @@ func Start() {
 	signal.Notify(make(chan os.Signal), os.Interrupt)
 	fmt.Println(`
 Enter "help" for a list of available commands
-Quit the program with CTRL + D or entering "quit".`)
+Quit the program by pressing CTRL + D or entering "quit".`)
 	run := true
 
 	clr_in := func(message string) string {
@@ -47,46 +53,57 @@ Quit the program with CTRL + D or entering "quit".`)
 		}
 		// handle invalid commands & quitting
 		switch code {
-		case 100:
-			run = false
 		case -1:
-			fmt.Printf("error: Command \"%s\" not recognized.\n", input)
+			run = false
 		}
 	}
-	fmt.Println("\nQuitting...")
+	print("\n")
 
 }
 
 // Interpet commands sent via terminal.
+// Returns (bool, error).
 //
-// Return -1 on failure, 0-1 on success, 100 on quit.
+//	0: no command match | 1: command match | -1: quit executed
+//	error: command failed to execute properly
 func interpret(message string) (int, error) {
 
 	msgSplice := strings.Split(message, " ")
 	cmd := strings.ToLower(msgSplice[0])
-	pmtrs := msgSplice[1:]
+	args := msgSplice[1:]
 
-	// groupcomp := func(s string, str_slice []string) bool {
-	// return slices.ContainsFunc(str_slice, func(word string) bool { return s == word })
-	// }
-
-	switch cmd {
-	case "speak":
-		return speak(pmtrs)
-	case "quit":
-		return 100, nil
+	for _, tcmd := range fcmds {
+		if cmd == tcmd.Name {
+			return 1, tcmd.Handle(args)
+		}
 	}
-	return -1, nil
+	if cmd == "quit" {
+		return -1, nil
+	}
+	fmt.Printf("error: Command \"%s\" not recognized.\n", cmd)
+	return 0, nil
+
 }
 
-// Send a message in the specified channel.
-func speak(parameters []string) (int, error) {
-	if len(parameters) < 2 {
-		fmt.Println("Usage: speak (channelID) (Message...)")
-		return 0, nil
-	}
-	channel := parameters[0]
-	message := strings.Join(parameters[1:], " ")
-	_, err := Session.ChannelMessageSend(channel, message)
-	return 1, err
+// Register terminal command.
+func register_cmd(cmd terminalCmd) {
+	fcmds = append(fcmds, cmd)
+}
+
+// Commands //
+
+func init() {
+	register_cmd(terminalCmd{
+		Name: "speak",
+		Handle: func(args []string) error {
+			if len(args) < 2 {
+				fmt.Println("Usage: speak (channelID) (Message...)")
+				return nil
+			}
+			channel := args[0]
+			message := strings.Join(args[1:], " ")
+			_, err := Session.ChannelMessageSend(channel, message)
+			return err
+		},
+	})
 }
