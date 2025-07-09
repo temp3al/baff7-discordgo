@@ -31,10 +31,11 @@ go.work.sum
 .idea/
 .vscode/
 
-# Cache and database information
+# Build data
+/.bin
 /.db
 /.cache
 
 # Tools' outputs
-/.tools/bin/*
+/.tools/.bin/*
 ~$*.*
