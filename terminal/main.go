@@ -6,7 +6,9 @@ import (
 	"log"
 	"math"
 	"os"
+	"os/exec"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -17,6 +19,84 @@ var (
 	Session *discordgo.Session
 	fcmds   []terminalCmd
 )
+
+////////////////////////////////////////////////////////////
+// Commands ////////////////////////////////////////////////
+
+func init() {
+	register_cmd(terminalCmd{
+		Name:        "help",
+		Usage:       "",
+		Description: "Show this list.",
+		Handle: func(args []string) (bool, error) {
+			cmdlimit := 8
+			fpage := 1
+			fpage_max := int(math.Ceil(
+				float64(len(fcmds)) /
+					float64(cmdlimit),
+			))
+
+			if len(args) > 1 {
+				page, err := strconv.Atoi(args[1])
+				if err == nil && page > 0 {
+					fpage = min(page, fpage_max)
+				}
+			}
+
+			to_print := ""
+			for i, cmd := range fcmds {
+				if i < cmdlimit*(fpage-1) {
+					continue
+				} else if i+1 > cmdlimit*fpage {
+					break
+				}
+				tusage := ""
+				if len(cmd.Usage) > 1 {
+					tusage += fmt.Sprintf(" %s", cmd.Usage)
+				}
+				to_print += fmt.Sprintf("%s%s - %s\n", cmd.Name, tusage, cmd.Description)
+			}
+			to_print += fmt.Sprintf("\nPage %d of %d", fpage, fpage_max)
+			fmt.Println(to_print)
+			return true, nil
+		},
+	})
+	register_cmd(terminalCmd{
+		Name:        "speak",
+		Usage:       "(ChannelID) (Message...)",
+		Description: "Send a message to a channel.",
+		Handle: func(args []string) (bool, error) {
+			if len(args) < 2 {
+				return false, nil
+			}
+			channel := args[0]
+			message := strings.Join(args[1:], " ")
+			_, err := Session.ChannelMessageSend(channel, message)
+			return true, err
+		},
+	})
+	register_cmd(terminalCmd{
+		Name:        "clear",
+		Description: "Clear the terminal.",
+		Handle: func(args []string) (bool, error) {
+			clsFunc := map[string]*exec.Cmd{
+				"linux":   exec.Command("clear"),
+				"windows": exec.Command("cmd", "/c", "cls"),
+			}
+			osget := runtime.GOOS
+			eCmd, succ := clsFunc[osget]
+			if !succ {
+				eCmd = clsFunc["linux"]
+				fmt.Printf("Your platform \"%s\" is not properly implemented. Attempting fallback...\n", osget)
+			}
+			eCmd.Stdout = os.Stdout
+			return true, eCmd.Run()
+		},
+	})
+}
+
+// Commands ////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 
 type terminalCmd struct {
 	Name        string
@@ -98,60 +178,4 @@ func interpret(message string) (int, error) {
 // Register terminal command.
 func register_cmd(cmd terminalCmd) {
 	fcmds = append(fcmds, cmd)
-}
-
-// Commands //
-
-func init() {
-	register_cmd(terminalCmd{
-		Name:        "help",
-		Usage:       "",
-		Description: "Show this list.",
-		Handle: func(args []string) (bool, error) {
-			cmdlimit := 8
-			fpage := 1
-			fpage_max := int(math.Ceil(
-				float64(len(fcmds)) /
-					float64(cmdlimit),
-			))
-
-			if len(args) > 1 {
-				page, err := strconv.Atoi(args[1])
-				if err == nil && page > 0 {
-					fpage = min(page, fpage_max)
-				}
-			}
-
-			to_print := ""
-			for i, cmd := range fcmds {
-				if i < cmdlimit*(fpage-1) {
-					continue
-				} else if i+1 > cmdlimit*fpage {
-					break
-				}
-				tusage := ""
-				if len(cmd.Usage) > 1 {
-					tusage += fmt.Sprintf(" %s", cmd.Usage)
-				}
-				to_print += fmt.Sprintf("%s%s - %s\n", cmd.Name, tusage, cmd.Description)
-			}
-			to_print += fmt.Sprintf("\nPage %d of %d", fpage, fpage_max)
-			fmt.Println(to_print)
-			return true, nil
-		},
-	})
-	register_cmd(terminalCmd{
-		Name:        "speak",
-		Usage:       "(ChannelID) (Message...)",
-		Description: "Send a message to a channel.",
-		Handle: func(args []string) (bool, error) {
-			if len(args) < 2 {
-				return false, nil
-			}
-			channel := args[0]
-			message := strings.Join(args[1:], " ")
-			_, err := Session.ChannelMessageSend(channel, message)
-			return true, err
-		},
-	})
 }
