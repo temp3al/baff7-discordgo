@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -39,24 +38,38 @@ func main() {
 		log.Fatalf("Failed to create new session.\n%s", err)
 	}
 	session.Open()
-	defer session.Close()
-	defer core.Stop()
+	// shutdown processes when exiting
+	shutfunc := func() {
+		println("Quitting...")
+		session.Close()
+		core.Stop()
+	}
+	defer shutfunc()
 	// direct to /core
 	core.Start(session)
 	commands.Ready()
 
 	log.Print("Session successfully launched!")
-	// Start a terminal cycle.
-	if ENABLE_TERMINAL {
+	// start a terminal cycle
+	if ENABLE_TERMINAL && !get_arg("--no-terminal") {
 		terminal.Session = session
 		terminal.Start()
 	} else {
 		// capture os.Interrupt to prevent hard quitting
-		fmt.Println("Quit the program with CTRL + D.")
+		fmt.Println("Quit the program by pressing CTRL + C.")
 		a := make(chan os.Signal, 1)
 		signal.Notify(a, os.Interrupt)
 		<-a
-		log.Println("Quitting...")
+		print("\n")
 	}
-	time.Sleep(255)
+}
+
+// Check if an arg. matches with provided argument.
+func get_arg(arg string) bool {
+	for _, a := range os.Args {
+		if arg == a {
+			return true
+		}
+	}
+	return false
 }
