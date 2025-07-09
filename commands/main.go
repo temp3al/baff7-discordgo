@@ -20,7 +20,8 @@ type Command struct {
 	// Name of this command.
 	// Can't have spaces, use underscores instead.
 	Name string
-	// The command's description (Used in slash commands.)
+	// The command's description, used in slash commands.
+	// Write preferably in 3rd person. (e.g. "Does this function")
 	Description string
 	// Parameters the command requires.
 	// This is displayed on /help only and doesn't reflect on handler input.

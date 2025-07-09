@@ -44,8 +44,9 @@ func help_command(session *discordgo.Session, message *discordgo.MessageCreate) 
 		if len(cmd.Usage) > 2 {
 			usage_seg = " *" + cmd.Usage + "*"
 		}
-		hcmd_description = hcmd_description +
-			fmt.Sprintf("%s%s%s\n-# %s\n\n", cmd_prefix, cmd.Name, usage_seg, cmd.Description)
+		hcmd_description += fmt.Sprintf(
+			"%s%s%s\n-# %s\n\n", cmd_prefix, cmd.Name, usage_seg, cmd.Description,
+		)
 	}
 	hcmd_footer := fmt.Sprintf(
 		"Page %d of %d",
