@@ -1,5 +1,5 @@
 // Package providing multiple color variables
-package uclr
+package ucolor
 
 var (
 	// credits to https://blender.org for this color table

@@ -2,7 +2,7 @@ package terminal
 
 import (
 	"bufio"
-	"discordgo-bot-template/utils/uclr"
+	"discordgo-bot-template/utils/ucolor"
 	"fmt"
 	"log"
 	"math"
@@ -18,14 +18,14 @@ import (
 
 var (
 	Session *discordgo.Session
-	fcmds   []terminalCmd
+	fcmds   []TerminalCom
 )
 
 ////////////////////////////////////////////////////////////
 // Commands ////////////////////////////////////////////////
 
 func init() {
-	register_cmd(terminalCmd{
+	TerminalRegcom(TerminalCom{
 		Name:        "help",
 		Usage:       "",
 		Description: "Show this list.",
@@ -44,7 +44,7 @@ func init() {
 				}
 			}
 
-			to_print := uclr.SUBTITLE
+			to_print := ucolor.SUBTITLE
 			for i, cmd := range fcmds {
 				if i < cmdlimit*(fpage-1) {
 					continue
@@ -53,16 +53,16 @@ func init() {
 				}
 				tusage := ""
 				if len(cmd.Usage) > 1 {
-					tusage += " " + uclr.ITALIC + cmd.Usage + uclr.RESET + uclr.SUBTITLE
+					tusage += " " + ucolor.ITALIC + cmd.Usage + ucolor.RESET + ucolor.SUBTITLE
 				}
 				to_print += fmt.Sprintf("%s%s - %s\n", cmd.Name, tusage, cmd.Description)
 			}
-			to_print += fmt.Sprintf("%s%sPage %d of %d%s\n", uclr.RESET, uclr.BOLD, fpage, fpage_max, uclr.RESET)
+			to_print += fmt.Sprintf("%s%sPage %d of %d%s\n", ucolor.RESET, ucolor.BOLD, fpage, fpage_max, ucolor.RESET)
 			fmt.Println(to_print)
 			return true, nil
 		},
 	})
-	register_cmd(terminalCmd{
+	TerminalRegcom(TerminalCom{
 		Name:        "speak",
 		Usage:       "(ChannelID) (Message...)",
 		Description: "Send a message to a channel.",
@@ -76,7 +76,7 @@ func init() {
 			return true, err
 		},
 	})
-	register_cmd(terminalCmd{
+	TerminalRegcom(TerminalCom{
 		Name:        "clear",
 		Description: "Clear the terminal.",
 		Handle: func(args []string) (bool, error) {
@@ -99,7 +99,7 @@ func init() {
 // Commands ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 
-type terminalCmd struct {
+type TerminalCom struct {
 	Name        string
 	Usage       string
 	Description string // pref. 1st person
@@ -116,12 +116,12 @@ func Start() {
 Enter "%shelp%s" for a list of available commands
 Quit the program by pressing %sCTRL + D%s or entering "%squit%s".
 `,
-		uclr.OKBLUE,
-		uclr.RESET,
-		uclr.OKCYAN,
-		uclr.RESET,
-		uclr.OKBLUE,
-		uclr.RESET,
+		ucolor.OKBLUE,
+		ucolor.RESET,
+		ucolor.OKCYAN,
+		ucolor.RESET,
+		ucolor.OKBLUE,
+		ucolor.RESET,
 	)
 	run := true
 
@@ -171,7 +171,7 @@ func interpret(message string) (int, error) {
 		if cmd == tcmd.Name {
 			ok, err := tcmd.Handle(args)
 			if !ok { // print command usage if formatted wrong
-				fmt.Printf("%sUsage: %s %s%s\n", uclr.BOLD, tcmd.Name, tcmd.Usage, uclr.RESET)
+				fmt.Printf("%sUsage: %s %s%s\n", ucolor.BOLD, tcmd.Name, tcmd.Usage, ucolor.RESET)
 			}
 			return 1, err
 		}
@@ -179,12 +179,12 @@ func interpret(message string) (int, error) {
 	if cmd == "quit" {
 		return -1, nil
 	}
-	fmt.Printf("%serror: Command \"%s\" not recognized.%s\n", uclr.FAIL, cmd, uclr.RESET)
+	fmt.Printf("%serror: Command \"%s\" not recognized.%s\n", ucolor.FAIL, cmd, ucolor.RESET)
 	return 0, nil
 
 }
 
 // Register terminal command.
-func register_cmd(cmd terminalCmd) {
+func TerminalRegcom(cmd TerminalCom) {
 	fcmds = append(fcmds, cmd)
 }
