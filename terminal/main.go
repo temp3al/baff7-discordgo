@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"bufio"
+	"discordgo-bot-template/utils/uclr"
 	"fmt"
 	"log"
 	"math"
@@ -43,7 +44,7 @@ func init() {
 				}
 			}
 
-			to_print := ""
+			to_print := uclr.SUBTITLE
 			for i, cmd := range fcmds {
 				if i < cmdlimit*(fpage-1) {
 					continue
@@ -52,11 +53,11 @@ func init() {
 				}
 				tusage := ""
 				if len(cmd.Usage) > 1 {
-					tusage += fmt.Sprintf(" %s", cmd.Usage)
+					tusage += " " + uclr.ITALIC + cmd.Usage + uclr.RESET + uclr.SUBTITLE
 				}
 				to_print += fmt.Sprintf("%s%s - %s\n", cmd.Name, tusage, cmd.Description)
 			}
-			to_print += fmt.Sprintf("\nPage %d of %d", fpage, fpage_max)
+			to_print += fmt.Sprintf("%s%sPage %d of %d%s\n", uclr.RESET, uclr.BOLD, fpage, fpage_max, uclr.RESET)
 			fmt.Println(to_print)
 			return true, nil
 		},
@@ -111,9 +112,17 @@ type terminalCmd struct {
 func Start() {
 	// capture os.Interrupt to prevent hard quitting
 	signal.Notify(make(chan os.Signal), os.Interrupt)
-	fmt.Println(`
-Enter "help" for a list of available commands
-Quit the program by pressing CTRL + D or entering "quit".`)
+	fmt.Printf(`
+Enter "%shelp%s" for a list of available commands
+Quit the program by pressing %sCTRL + D%s or entering "%squit%s".
+`,
+		uclr.OKBLUE,
+		uclr.RESET,
+		uclr.OKCYAN,
+		uclr.RESET,
+		uclr.OKBLUE,
+		uclr.RESET,
+	)
 	run := true
 
 	clr_in := func(message string) string {
@@ -162,7 +171,7 @@ func interpret(message string) (int, error) {
 		if cmd == tcmd.Name {
 			ok, err := tcmd.Handle(args)
 			if !ok { // print command usage if formatted wrong
-				fmt.Printf("Usage: %s %s\n", tcmd.Name, tcmd.Usage)
+				fmt.Printf("%sUsage: %s %s%s\n", uclr.BOLD, tcmd.Name, tcmd.Usage, uclr.RESET)
 			}
 			return 1, err
 		}
@@ -170,7 +179,7 @@ func interpret(message string) (int, error) {
 	if cmd == "quit" {
 		return -1, nil
 	}
-	fmt.Printf("error: Command \"%s\" not recognized.\n", cmd)
+	fmt.Printf("%serror: Command \"%s\" not recognized.%s\n", uclr.FAIL, cmd, uclr.RESET)
 	return 0, nil
 
 }
