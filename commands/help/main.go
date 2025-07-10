@@ -4,7 +4,7 @@
 package help
 
 import (
-	"discordgo-bot-template/commands"
+	"discordgo-bot/commands"
 	"fmt"
 	"math"
 	"strconv"

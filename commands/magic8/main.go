@@ -4,7 +4,7 @@
 package magic8
 
 import (
-	"discordgo-bot-template/commands"
+	"discordgo-bot/commands"
 	"fmt"
 	"math/rand/v2"
 	"strings"

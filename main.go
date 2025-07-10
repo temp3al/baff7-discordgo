@@ -1,10 +1,10 @@
 package main
 
 import (
-	"discordgo-bot-template/commands"
-	"discordgo-bot-template/core"
-	"discordgo-bot-template/terminal"
-	"discordgo-bot-template/utils/ucolor"
+	"discordgo-bot/commands"
+	"discordgo-bot/core"
+	"discordgo-bot/terminal"
+	"discordgo-bot/utils/ucolor"
 	"fmt"
 	"log"
 	"os"
@@ -13,8 +13,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 
-	_ "discordgo-bot-template/.load"
-	_ "discordgo-bot-template/commands"
+	_ "discordgo-bot/.load"
+	_ "discordgo-bot/commands"
 )
 
 var (

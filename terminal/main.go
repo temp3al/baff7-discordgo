@@ -2,7 +2,7 @@ package terminal
 
 import (
 	"bufio"
-	"discordgo-bot-template/utils/ucolor"
+	"discordgo-bot/utils/ucolor"
 	"fmt"
 	"log"
 	"math"

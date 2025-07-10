@@ -2,7 +2,7 @@
 package commands
 
 import (
-	"discordgo-bot-template/core"
+	"discordgo-bot/core"
 	"log"
 	"strings"
 

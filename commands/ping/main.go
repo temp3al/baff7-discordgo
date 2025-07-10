@@ -4,7 +4,7 @@
 package ping
 
 import (
-	"discordgo-bot-template/commands"
+	"discordgo-bot/commands"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"

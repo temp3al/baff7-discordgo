@@ -1,4 +1,4 @@
-module discordgo-bot-template
+module discordgo-bot
 
 go 1.24.4
 

@@ -1,9 +1,9 @@
 package tools
 
 import (
-	"discordgo-bot-template/terminal"
-	"discordgo-bot-template/utils/ucolor"
-	"discordgo-bot-template/utils/uembed"
+	"discordgo-bot/terminal"
+	"discordgo-bot/utils/ucolor"
+	"discordgo-bot/utils/uembed"
 	"fmt"
 	"strings"
 
