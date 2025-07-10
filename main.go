@@ -4,6 +4,7 @@ import (
 	"discordgo-bot-template/commands"
 	"discordgo-bot-template/core"
 	"discordgo-bot-template/terminal"
+	"discordgo-bot-template/utils/uclr"
 	"fmt"
 	"log"
 	"os"
@@ -56,7 +57,11 @@ func main() {
 		terminal.Start()
 	} else {
 		// capture os.Interrupt to prevent hard quitting
-		fmt.Println("Quit the program by pressing CTRL + C.")
+		fmt.Printf(
+			"Quit the program by pressing %sCTRL + C%s.\n",
+			uclr.OKCYAN,
+			uclr.RESET,
+		)
 		a := make(chan os.Signal, 1)
 		signal.Notify(a, os.Interrupt)
 		<-a
