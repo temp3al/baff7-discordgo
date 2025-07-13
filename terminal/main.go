@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"bufio"
+	"discordgo-bot/utils"
 	"discordgo-bot/utils/ucolor"
 	"fmt"
 	"log"
@@ -28,40 +29,50 @@ func init() {
 	tcmds := []TerminalCommand{
 		{
 			Name:        "help",
-			Usage:       "",
+			Usage:       "[Page]",
 			Description: "Show this list.",
 			Handle: func(args []string) (bool, error) {
-				cmdlimit := 8
+				cmdlimit := 12
 				fpage := 1
 				fpage_max := int(math.Ceil(
 					float64(len(fcmds)) /
 						float64(cmdlimit),
 				))
 
-				if len(args) > 1 {
-					page, err := strconv.Atoi(args[1])
-					if err == nil && page > 0 {
-						fpage = min(page, fpage_max)
-					}
+				// interpret first arg. as page
+				spage := utils.GetSliceStr(args, 0, "1")
+				page, err := strconv.Atoi(spage)
+				if err == nil && page > 0 {
+					fpage = min(page, fpage_max)
 				}
-
+				// generate our string to print
 				to_print := ucolor.SUBTITLE
 				for i, cmd := range fcmds {
+					// offset according to our page & visible commands per
 					if i < cmdlimit*(fpage-1) {
 						continue
 					} else if i+1 > cmdlimit*fpage {
 						break
 					}
-					tusage := ""
+					tusage := "" // append usage if we have one
 					if len(cmd.Usage) > 1 {
 						tusage += " " + ucolor.ITALIC + cmd.Usage + ucolor.RESET + ucolor.SUBTITLE
 					}
 					to_print += fmt.Sprintf("%s%s - %s\n", cmd.Name, tusage, cmd.Description)
 				}
+
 				to_print += fmt.Sprintf("%s%sPage %d of %d%s\n", ucolor.RESET, ucolor.BOLD, fpage, fpage_max, ucolor.RESET)
 				fmt.Println(to_print)
 				return true, nil
 			},
+		},
+		{
+			// fake quit command, actually handled by "interpret" func.
+			// we keep this here so our help cmd shows what quit does.
+			Name:        "quit",
+			Usage:       "",
+			Description: "Stop running the bot.",
+			Handle:      func(args []string) (bool, error) { return true, nil },
 		},
 		{
 			Name:        "speak",
@@ -172,6 +183,9 @@ func interpret(message string) (int, error) {
 	cmd := strings.ToLower(msgSplice[0])
 	args := msgSplice[1:]
 
+	if cmd == "quit" {
+		return -1, nil
+	}
 	for _, tcmd := range fcmds {
 		if cmd == tcmd.Name {
 			ok, err := tcmd.Handle(args)
@@ -180,9 +194,6 @@ func interpret(message string) (int, error) {
 			}
 			return 1, err
 		}
-	}
-	if cmd == "quit" {
-		return -1, nil
 	}
 	fmt.Printf("%serror: Command \"%s\" not recognized.%s\n", ucolor.FAIL, cmd, ucolor.RESET)
 	return 0, nil
