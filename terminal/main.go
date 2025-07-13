@@ -18,88 +18,93 @@ import (
 
 var (
 	Session *discordgo.Session
-	fcmds   []TerminalCom
+	fcmds   []TerminalCommand
 )
 
 ////////////////////////////////////////////////////////////
 // Commands ////////////////////////////////////////////////
 
 func init() {
-	TerminalRegcom(TerminalCom{
-		Name:        "help",
-		Usage:       "",
-		Description: "Show this list.",
-		Handle: func(args []string) (bool, error) {
-			cmdlimit := 8
-			fpage := 1
-			fpage_max := int(math.Ceil(
-				float64(len(fcmds)) /
-					float64(cmdlimit),
-			))
+	tcmds := []TerminalCommand{
+		{
+			Name:        "help",
+			Usage:       "",
+			Description: "Show this list.",
+			Handle: func(args []string) (bool, error) {
+				cmdlimit := 8
+				fpage := 1
+				fpage_max := int(math.Ceil(
+					float64(len(fcmds)) /
+						float64(cmdlimit),
+				))
 
-			if len(args) > 1 {
-				page, err := strconv.Atoi(args[1])
-				if err == nil && page > 0 {
-					fpage = min(page, fpage_max)
+				if len(args) > 1 {
+					page, err := strconv.Atoi(args[1])
+					if err == nil && page > 0 {
+						fpage = min(page, fpage_max)
+					}
 				}
-			}
 
-			to_print := ucolor.SUBTITLE
-			for i, cmd := range fcmds {
-				if i < cmdlimit*(fpage-1) {
-					continue
-				} else if i+1 > cmdlimit*fpage {
-					break
+				to_print := ucolor.SUBTITLE
+				for i, cmd := range fcmds {
+					if i < cmdlimit*(fpage-1) {
+						continue
+					} else if i+1 > cmdlimit*fpage {
+						break
+					}
+					tusage := ""
+					if len(cmd.Usage) > 1 {
+						tusage += " " + ucolor.ITALIC + cmd.Usage + ucolor.RESET + ucolor.SUBTITLE
+					}
+					to_print += fmt.Sprintf("%s%s - %s\n", cmd.Name, tusage, cmd.Description)
 				}
-				tusage := ""
-				if len(cmd.Usage) > 1 {
-					tusage += " " + ucolor.ITALIC + cmd.Usage + ucolor.RESET + ucolor.SUBTITLE
+				to_print += fmt.Sprintf("%s%sPage %d of %d%s\n", ucolor.RESET, ucolor.BOLD, fpage, fpage_max, ucolor.RESET)
+				fmt.Println(to_print)
+				return true, nil
+			},
+		},
+		{
+			Name:        "speak",
+			Usage:       "(ChannelID) (Message...)",
+			Description: "Send a message to a channel.",
+			Handle: func(args []string) (bool, error) {
+				if len(args) < 2 {
+					return false, nil
 				}
-				to_print += fmt.Sprintf("%s%s - %s\n", cmd.Name, tusage, cmd.Description)
-			}
-			to_print += fmt.Sprintf("%s%sPage %d of %d%s\n", ucolor.RESET, ucolor.BOLD, fpage, fpage_max, ucolor.RESET)
-			fmt.Println(to_print)
-			return true, nil
+				channel := args[0]
+				message := strings.Join(args[1:], " ")
+				_, err := Session.ChannelMessageSend(channel, message)
+				return true, err
+			},
 		},
-	})
-	TerminalRegcom(TerminalCom{
-		Name:        "speak",
-		Usage:       "(ChannelID) (Message...)",
-		Description: "Send a message to a channel.",
-		Handle: func(args []string) (bool, error) {
-			if len(args) < 2 {
-				return false, nil
-			}
-			channel := args[0]
-			message := strings.Join(args[1:], " ")
-			_, err := Session.ChannelMessageSend(channel, message)
-			return true, err
-		},
-	})
-	TerminalRegcom(TerminalCom{
-		Name:        "clear",
-		Description: "Clear the terminal.",
-		Handle: func(args []string) (bool, error) {
-			clsFunc := map[string]*exec.Cmd{
-				"linux":   exec.Command("clear"),
-				"windows": exec.Command("cmd", "/c", "cls"),
-			}
-			osget := runtime.GOOS
-			eCmd, succ := clsFunc[osget]
-			if !succ {
-				eCmd = clsFunc["linux"]
-				fmt.Printf("Your platform \"%s\" is not properly implemented. Attempting fallback...\n", osget)
-			}
-			eCmd.Stdout = os.Stdout
-			return true, eCmd.Run()
-		},
-	})
+		{
+			Name:        "clear",
+			Description: "Clear the terminal.",
+			Handle: func(args []string) (bool, error) {
+				clsFunc := map[string]*exec.Cmd{
+					"linux":   exec.Command("clear"),
+					"windows": exec.Command("cmd", "/c", "cls"),
+				}
+				osget := runtime.GOOS
+				eCmd, succ := clsFunc[osget]
+				if !succ {
+					eCmd = clsFunc["linux"]
+					fmt.Printf("Your platform \"%s\" is not properly implemented. Attempting fallback...\n", osget)
+				}
+				eCmd.Stdout = os.Stdout
+				return true, eCmd.Run()
+			},
+		}}
+	// register all commands listed
+	for _, cmd := range tcmds {
+		RegisterTerminalCommand(cmd)
+	}
 }
 
 // Commands ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 
-type TerminalCom struct {
+type TerminalCommand struct {
 	Name        string
 	Usage       string
 	Description string // pref. 1st person
@@ -111,7 +116,7 @@ type TerminalCom struct {
 // Start our terminal loop.
 func Start() {
 	// capture os.Interrupt to prevent hard quitting
-	signal.Notify(make(chan os.Signal), os.Interrupt)
+	signal.Notify(make(chan os.Signal, 1), os.Interrupt)
 	fmt.Printf(`
 Enter "%shelp%s" for a list of available commands
 Quit the program by pressing %sCTRL + D%s or entering "%squit%s".
@@ -185,6 +190,6 @@ func interpret(message string) (int, error) {
 }
 
 // Register terminal command.
-func TerminalRegcom(cmd TerminalCom) {
+func RegisterTerminalCommand(cmd TerminalCommand) {
 	fcmds = append(fcmds, cmd)
 }

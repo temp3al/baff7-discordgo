@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	terminal.TerminalRegcom(terminal.TerminalCom{
+	terminal.RegisterTerminalCommand(terminal.TerminalCommand{
 		Name:        "test-fail-embed",
 		Description: "Test an embed failure message.",
 		Usage:       "(ChannelID) [IDNumber]",
