@@ -4,7 +4,7 @@
 package help
 
 import (
-	"discordgo-bot/commands"
+	"discordgo-bot/core"
 	"fmt"
 	"math"
 	"strconv"
@@ -14,11 +14,11 @@ import (
 )
 
 func help_command(session *discordgo.Session, message *discordgo.MessageCreate) error {
-	cmd_prefix := "/" // commands.Prefixes[0]
+	cmd_prefix := "/" // core.Prefixes[0]
 	cmds_per_page := 8
 	help_page := 1
 	max_pages := int(math.Ceil(
-		float64(len(commands.Commands)) /
+		float64(len(core.Commands)) /
 			float64(cmds_per_page),
 	))
 
@@ -33,8 +33,8 @@ func help_command(session *discordgo.Session, message *discordgo.MessageCreate) 
 
 	hcmd_title := "Command List"
 	hcmd_description := ""
-	// generate description from commands
-	for i, cmd := range commands.Commands {
+	// generate description from core
+	for i, cmd := range core.Commands {
 		if i < cmds_per_page*(help_page-1) { // offset our command list using help_page & commands_per_page
 			continue
 		} else if i+1 > cmds_per_page*help_page { // stop generating if we go past our cmds limit.
@@ -79,10 +79,10 @@ func help_command(session *discordgo.Session, message *discordgo.MessageCreate) 
 }
 
 func init() {
-	commands.Register(
-		commands.Command{ // create command
+	core.RegisterCommand(
+		core.Command{ // create command
 			Name:        "help",
-			Description: "Shows you a list of commands.",
+			Description: "Shows you a list of core.",
 			Aliases:     []string{"h"},
 			// chat message handle
 			HandlerChat: func(session *discordgo.Session, message *discordgo.MessageCreate) error {

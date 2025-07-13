@@ -4,7 +4,7 @@
 package ping
 
 import (
-	"discordgo-bot/commands"
+	"discordgo-bot/core"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
@@ -35,8 +35,8 @@ func help_command(session *discordgo.Session, message *discordgo.MessageCreate) 
 }
 
 func init() {
-	commands.Register(
-		commands.Command{ // create command
+	core.RegisterCommand(
+		core.Command{ // create command
 			Name:        "ping",
 			Description: "Pong! (Gets response latency.)",
 			// chat message handle

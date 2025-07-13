@@ -4,11 +4,11 @@ package core
 import "github.com/bwmarrin/discordgo"
 
 var (
-	Session *discordgo.Session
+	CoreSession *discordgo.Session
 )
 
 func Start(session *discordgo.Session) {
-	Session = session
+	CoreSession = session
 	// set status
 	session.UpdateStatusComplex(discordgo.UpdateStatusData{
 		Status: "online", // online, idle, dnd or invisible

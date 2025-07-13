@@ -1,7 +1,6 @@
 package main
 
 import (
-	"discordgo-bot/commands"
 	"discordgo-bot/core"
 	"discordgo-bot/terminal"
 	"discordgo-bot/utils/ucolor"
@@ -13,8 +12,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 
-	_ "discordgo-bot/.load"
+	// commands import
 	_ "discordgo-bot/commands"
+	// external imports
+	_ "discordgo-bot/external"
 )
 
 var (
@@ -48,7 +49,7 @@ func main() {
 	defer shutfunc()
 	// direct to /core
 	core.Start(session)
-	commands.Ready()
+	core.StartCommandRead()
 
 	log.Print("Session successfully launched!")
 	// start a terminal cycle

@@ -4,7 +4,7 @@
 package magic8
 
 import (
-	"discordgo-bot/commands"
+	"discordgo-bot/core"
 	"fmt"
 	"math/rand/v2"
 	"strings"
@@ -40,7 +40,7 @@ func magic8_command(session *discordgo.Session, message *discordgo.MessageCreate
 	msg := fmt.Sprintf("**%s's question:** %s\n**answer:** %s", message.Author, prompt, response)
 	_, err := session.ChannelMessageSendComplex(message.ChannelID, &discordgo.MessageSend{
 		Embed: &discordgo.MessageEmbed{
-			Title:       "Magic 8",
+			Title:       "8 Ball",
 			Description: msg,
 		},
 		Reference: &discordgo.MessageReference{
@@ -56,8 +56,8 @@ func magic8_command(session *discordgo.Session, message *discordgo.MessageCreate
 }
 
 func init() {
-	commands.Register(
-		commands.Command{ // create command
+	core.RegisterCommand(
+		core.Command{ // create command
 			Name:        "8ball",
 			Description: "Respond to a yes / no question.",
 			Aliases:     []string{"magic8", "answer"},
