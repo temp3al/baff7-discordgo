@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -178,6 +179,10 @@ Quit the program by pressing %sCTRL + D%s or entering "%squit%s".
 //	0: no command match | 1: command match | -1: quit executed
 //	error: command failed to execute properly
 func interpret(message string) (int, error) {
+	// ignore whitespace, return on nothing
+	if parsed, _ := regexp.MatchString(`\w+`, message); !parsed {
+		return 0, nil
+	}
 
 	msgSplice := strings.Split(message, " ")
 	cmd := strings.ToLower(msgSplice[0])
