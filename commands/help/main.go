@@ -4,94 +4,119 @@
 package help
 
 import (
-	"discordgo-bot/core"
+	"discordgo-bot/core/cmds"
 	"fmt"
+	"log"
 	"math"
-	"strconv"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-func help_command(session *discordgo.Session, message *discordgo.MessageCreate) error {
-	cmd_prefix := "/" // core.Prefixes[0]
-	cmds_per_page := 8
-	help_page := 1
-	max_pages := int(math.Ceil(
-		float64(len(core.Commands)) /
-			float64(cmds_per_page),
-	))
+var (
+	// Amount of commands to be rendered per command call.
+	//
+	// Higher is more information at the cost of chat visibility.
+	commands_per_page int = 11
+)
 
-	// reformat our 2nd parameter as int, set page to parameter
-	param := strings.Fields(message.Content)
-	if len(param) > 1 {
-		page, err := strconv.Atoi(param[1])
-		if err == nil && page > 0 {
-			help_page = min(page, max_pages)
-		}
+func handlecommand(
+	cdata *cmds.CommandCreateData,
+	parameters map[string]*discordgo.ApplicationCommandInteractionDataOption,
+) {
+	cmd_prefix := "/" // core.Prefixes[0]
+	cmd_map := cmds.GetCommandEntries()
+
+	page_max := int(math.Ceil(
+		float64(len(cmd_map)) /
+			float64(commands_per_page),
+	))
+	page_active := 1
+	// pull our page parameter
+	if pmt, ok := parameters["page"]; ok {
+		page_active = max(1, min(page_max, int(pmt.IntValue())))
 	}
 
-	hcmd_title := "Command List"
-	hcmd_description := ""
+	str_title := "Command List"
 	// generate description from core
-	for i, cmd := range core.Commands {
-		if i < cmds_per_page*(help_page-1) { // offset our command list using help_page & commands_per_page
+	str_desc := ""
+	i := 0 // ranging maps doesnt return a len variable so...
+	for _, cmd := range cmd_map {
+		i++
+		if i < commands_per_page*(page_active-1) { // offset our command list using help_page & commands_per_page
 			continue
-		} else if i+1 > cmds_per_page*help_page { // stop generating if we go past our cmds limit.
+		} else if i+1 > commands_per_page*page_active { // stop generating if we go past our cmds limit.
 			break
 		}
-		usage_seg := ""
-		if len(cmd.Usage) > 2 {
-			usage_seg = " *" + cmd.Usage + "*"
+		// generate usage line using command options
+		str_pmtrs := ""
+		cmd_options := cmd.AppCommand.Options
+		for _, param := range cmd_options {
+			str_pmtrs += fmt.Sprintf(" *[%s]*", param.Name)
 		}
-		hcmd_description += fmt.Sprintf(
-			"%s%s%s\n-# %s\n\n", cmd_prefix, cmd.Name, usage_seg, cmd.Description,
+		str_desc += fmt.Sprintf(
+			"%s%s%s\n-# %s\n\n", cmd_prefix, cmd.AppCommand.Name, str_pmtrs, cmd.AppCommand.Description,
 		)
 	}
+	// footer showing our active page
 	hcmd_footer := fmt.Sprintf(
 		"Page %d of %d",
-		help_page,
-		max_pages,
+		page_active,
+		page_max,
 	)
+	embed := &discordgo.MessageEmbed{
+		Title:       str_title,
+		Description: str_desc,
+		Footer: &discordgo.MessageEmbedFooter{
+			Text: hcmd_footer,
+		},
+		Color: 0x41aa0e,
+	}
 
-	_, err := session.ChannelMessageSendComplex(
-		message.ChannelID,
-		&discordgo.MessageSend{
-			Embed: &discordgo.MessageEmbed{
-				Title:       hcmd_title,
-				Description: hcmd_description,
-				Footer: &discordgo.MessageEmbedFooter{
-					Text: hcmd_footer,
+	err := fmt.Errorf("message & interaction creates are inactive")
+	switch cdata.GetActive() {
+	case cmds.CreateMessageType:
+		_, err = cdata.Session.ChannelMessageSendComplex(
+			cdata.Message.ChannelID,
+			&discordgo.MessageSend{
+				Embed: embed,
+				Reference: &discordgo.MessageReference{
+					MessageID: cdata.Message.ID,
+					ChannelID: cdata.Message.ChannelID,
+					GuildID:   cdata.Message.GuildID,
 				},
-				Color: 0x41aa0e,
+				AllowedMentions: &discordgo.MessageAllowedMentions{
+					RepliedUser: false,
+				},
 			},
-			Reference: &discordgo.MessageReference{
-				MessageID: message.ID,
-				ChannelID: message.ChannelID,
-				GuildID:   message.GuildID,
-			},
-			AllowedMentions: &discordgo.MessageAllowedMentions{
-				RepliedUser: false,
+		)
+	case cmds.CreateInteractionType:
+		err = cdata.Session.InteractionRespond(cdata.Interaction.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Embeds: []*discordgo.MessageEmbed{embed},
 			},
 		},
-	)
-	return err
+		)
+	}
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func init() {
-	core.RegisterCommand(
-		core.Command{ // create command
+	cmds.Register(cmds.CommandEntry{
+		AppCommand: discordgo.ApplicationCommand{
 			Name:        "help",
-			Description: "Shows you a list of core.",
-			Aliases:     []string{"h"},
-			// chat message handle
-			HandlerChat: func(session *discordgo.Session, message *discordgo.MessageCreate) error {
-				return help_command(session, message)
-			},
-			// slash message handle
-			HandlerSlash: func(session *discordgo.Session, interaction *discordgo.InteractionCreate) error {
-				return nil
+			Description: "Show a list and usage of available commands.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "page",
+					Description: "Page to display.",
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Required:    false,
+				},
 			},
 		},
-	)
+		HandleFunc: handlecommand,
+	})
 }

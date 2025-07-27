@@ -4,49 +4,70 @@
 package ping
 
 import (
-	"discordgo-bot/core"
+	"discordgo-bot/core/cmds"
 	"fmt"
+	"log"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-func help_command(session *discordgo.Session, message *discordgo.MessageCreate) error {
-	desc_msg := fmt.Sprintf("# Pong! 🏓\n-# %dms response time", session.HeartbeatLatency().Milliseconds())
+func handlecommand(
+	cdata *cmds.CommandCreateData,
+	parameters map[string]*discordgo.ApplicationCommandInteractionDataOption,
+) {
+	msg_desc := fmt.Sprintf("# Pong! 🏓\n-# %dms response time", cdata.Session.HeartbeatLatency().Milliseconds())
 
-	_, err := session.ChannelMessageSendComplex(
-		message.ChannelID,
-		&discordgo.MessageSend{
-			Embed: &discordgo.MessageEmbed{
-				Title:       " ",
-				Description: desc_msg,
-				Color:       0x41aa0e,
+	embed := &discordgo.MessageEmbed{
+		Title:       " ",
+		Description: msg_desc,
+		Color:       0x41aa0e,
+	}
+
+	err := fmt.Errorf("message & interaction creates are inactive")
+	switch cdata.GetActive() {
+	case cmds.CreateMessageType:
+		_, err = cdata.Session.ChannelMessageSendComplex(
+			cdata.Message.ChannelID,
+			&discordgo.MessageSend{
+				Embed: embed,
+				Reference: &discordgo.MessageReference{
+					MessageID: cdata.Message.ID,
+					ChannelID: cdata.Message.ChannelID,
+					GuildID:   cdata.Message.GuildID,
+				},
+				AllowedMentions: &discordgo.MessageAllowedMentions{
+					RepliedUser: false,
+				},
 			},
-			Reference: &discordgo.MessageReference{
-				MessageID: message.ID,
-				ChannelID: message.ChannelID,
-				GuildID:   message.GuildID,
-			},
-			AllowedMentions: &discordgo.MessageAllowedMentions{
-				RepliedUser: true,
+		)
+	case cmds.CreateInteractionType:
+		err = cdata.Session.InteractionRespond(cdata.Interaction.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Embeds: []*discordgo.MessageEmbed{embed},
 			},
 		},
-	)
-	return err
+		)
+	}
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func init() {
-	core.RegisterCommand(
-		core.Command{ // create command
+	cmds.Register(cmds.CommandEntry{
+		AppCommand: discordgo.ApplicationCommand{
 			Name:        "ping",
-			Description: "Pong! (Gets response latency.)",
-			// chat message handle
-			HandlerChat: func(session *discordgo.Session, message *discordgo.MessageCreate) error {
-				return help_command(session, message)
-			},
-			// slash message handle
-			HandlerSlash: func(session *discordgo.Session, interaction *discordgo.InteractionCreate) error {
-				return nil
+			Description: "Pong! Responds with response latency.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "page",
+					Description: "Page to display.",
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Required:    false,
+				},
 			},
 		},
-	)
+		HandleFunc: handlecommand,
+	})
 }

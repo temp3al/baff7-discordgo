@@ -3,6 +3,6 @@ package ldcmds
 
 import (
 	_ "discordgo-bot/commands/help"
-	_ "discordgo-bot/commands/magic8"
 	_ "discordgo-bot/commands/ping"
+	//_ "discordgo-bot/commands/magic8"
 )

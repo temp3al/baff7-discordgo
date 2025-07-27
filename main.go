@@ -2,6 +2,7 @@ package main
 
 import (
 	"discordgo-bot/core"
+	cmds "discordgo-bot/core/cmds"
 	"discordgo-bot/terminal"
 	"discordgo-bot/utils/ucolor"
 	"fmt"
@@ -42,14 +43,15 @@ func main() {
 	session.Open()
 	// shutdown processes when exiting
 	shutfunc := func() {
-		println("Quitting...")
+		cmds.SlashClearCommands()
+		log.Println("Quitting...")
 		session.Close()
 		core.Stop()
 	}
 	defer shutfunc()
 	// direct to /core
 	core.Start(session)
-	core.StartCommandRead()
+	cmds.InitCommands()
 
 	log.Print("Session successfully launched!")
 	// start a terminal cycle

@@ -4,10 +4,10 @@
 package magic8
 
 import (
-	"discordgo-bot/core"
+	"discordgo-bot/core/cmds"
 	"fmt"
+	"log"
 	"math/rand/v2"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -25,50 +25,81 @@ var (
 	}
 )
 
-func magic8_command(session *discordgo.Session, message *discordgo.MessageCreate) error {
-	i := strings.Fields(message.Content)
-	if len(i) <= 1 {
-		return fmt.Errorf("no question")
+func handlecommand(
+	cdata *cmds.CommandCreateData,
+	parameters map[string]*discordgo.ApplicationCommandInteractionDataOption,
+) {
+	pmt, ok := parameters["question"]
+	if !ok {
+		fmt.Println(fmt.Errorf("no question provided?"))
+		return
 	}
+	usr_question := pmt.StringValue()
+
 	// choose a random response from all our answer pools
 	res_pool := [][]string{responses_pos, responses_neutro, responses_neg}
 	res_group := res_pool[rand.IntN(len(res_pool))]
 	response := res_group[rand.IntN(len(res_group))]
 	// create an embed including the user's prompt & the outcome
-	prompt := strings.Join(i[1:], " ")
 
-	msg := fmt.Sprintf("**%s's question:** %s\n**answer:** %s", message.Author, prompt, response)
-	_, err := session.ChannelMessageSendComplex(message.ChannelID, &discordgo.MessageSend{
-		Embed: &discordgo.MessageEmbed{
-			Title:       "8 Ball",
-			Description: msg,
+	var author string = "User"
+	if cdata.Message != nil {
+		author = cdata.Message.Author.GlobalName
+	} else if cdata.Interaction != nil {
+		author = cdata.Interaction.User.GlobalName
+	}
+
+	msg := fmt.Sprintf("**%s's question:** %s\n**answer:** %s", author, usr_question, response)
+	embed := &discordgo.MessageEmbed{
+		Title:       "8 Ball",
+		Description: msg,
+	}
+
+	err := fmt.Errorf("message & interaction creates are inactive")
+	switch cdata.GetActive() {
+	case cmds.CreateMessageType:
+		_, err = cdata.Session.ChannelMessageSendComplex(
+			cdata.Message.ChannelID,
+			&discordgo.MessageSend{
+				Embed: embed,
+				Reference: &discordgo.MessageReference{
+					MessageID: cdata.Message.ID,
+					ChannelID: cdata.Message.ChannelID,
+					GuildID:   cdata.Message.GuildID,
+				},
+				AllowedMentions: &discordgo.MessageAllowedMentions{
+					RepliedUser: false,
+				},
+			},
+		)
+	case cmds.CreateInteractionType:
+		err = cdata.Session.InteractionRespond(cdata.Interaction.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Embeds: []*discordgo.MessageEmbed{embed},
+			},
 		},
-		Reference: &discordgo.MessageReference{
-			MessageID: message.ID,
-			ChannelID: message.ChannelID,
-			GuildID:   message.GuildID,
-		},
-		AllowedMentions: &discordgo.MessageAllowedMentions{
-			RepliedUser: false,
-		},
-	})
-	return err
+		)
+	}
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func init() {
-	core.RegisterCommand(
-		core.Command{ // create command
+	cmds.Register(cmds.CommandEntry{
+		AppCommand: discordgo.ApplicationCommand{
 			Name:        "8ball",
-			Description: "Respond to a yes / no question.",
-			Aliases:     []string{"magic8", "answer"},
-			// chat message handle
-			HandlerChat: func(session *discordgo.Session, message *discordgo.MessageCreate) error {
-				return magic8_command(session, message)
-			},
-			// slash message handle
-			HandlerSlash: func(session *discordgo.Session, interaction *discordgo.InteractionCreate) error {
-				return nil
+			Description: "Responds to a yes / no question.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Name:        "question",
+					Description: "What is your question?",
+					Type:        discordgo.ApplicationCommandOptionString,
+					Required:    true,
+				},
 			},
 		},
-	)
+		HandleFunc: handlecommand,
+	})
 }
