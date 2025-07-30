@@ -107,11 +107,47 @@ func handle_interpret_chatcommand(session *discordgo.Session, message *discordgo
 	}
 	// store command for later usage
 	command := chcmd_get_commandentry(content)
-	options, err := chcmd_get_options(content)
+
+	prmt_dirty, _, err := chcmd_get_parameters(content) // prmt_dirty, prmt_clean, err := chcmd_get_parameters(content)
 	if err != nil {
 		log.Printf("%e\n", err)
 		return
 	}
+	options := map[string]*discordgo.ApplicationCommandInteractionDataOption{}
+	// generate proper option interaction data from our parameters
+	cmdoptions := command.AppCommand.Options
+	// automatically set name for dirty ones
+	for i, optp := range prmt_dirty {
+		// got more dirty parameters than actual possible options..?
+		// ignore them for now...
+		if i >= len(cmdoptions) {
+			break
+		}
+		cname := cmdoptions[i].Name
+		ctype := cmdoptions[i].Type
+		options[cname] = &discordgo.ApplicationCommandInteractionDataOption{
+			Name:  cname,
+			Value: optcmd_parse_valtype(optp.Content[0], ctype),
+			Type:  ctype,
+		}
+	}
+	// pull names from clean ones
+
+	// todo: handle clean parameters
+
+	//for _, optp := range prmt_clean {
+	//	// clean parameters need to be at least 2 items long
+	//	if len(optp.Content) < 1 {
+	//		continue
+	//	}
+	//	cname := optp.Content[0]
+	//	ctype := cmdoptions[i].Type
+	//	options[cname] = &discordgo.ApplicationCommandInteractionDataOption{
+	//		Name:  cname,
+	//		Value: optcmd_parse_valtype(optp.Content[0], ctype),
+	//		Type:  ctype,
+	//	}
+	//}
 	// once everything is ready, execute our command
 	command.HandleFunc(
 		&CommandCreateData{session, message, nil},
@@ -135,14 +171,12 @@ func chcmd_get_commandentry(content string) *CommandEntry {
 }
 
 // generate interaction options from command string
-func chcmd_get_options(content string) (map[string]*discordgo.ApplicationCommandInteractionDataOption, error) {
+func chcmd_get_parameters(content string) ([]*optionParameter, []*optionParameter, error) {
 	// entries' order is important for priority comparison
 	// lower priority regexes will catch words from
 	// previous, high priority regexes and are meant to
 	// pick up dirtier, less specific option parameters.
-	options_map := map[string]*discordgo.ApplicationCommandInteractionDataOption{}
-
-	param_entries := []*optionParameter{}
+	prmt_all := []*optionParameter{}
 	// regex, parse & log all parameters unrepeated
 	for _, pptr := range OptionRegex {
 		rmatch_idx := pptr.Regex.FindAllStringSubmatchIndex(content, -1)
@@ -154,14 +188,14 @@ func chcmd_get_options(content string) (map[string]*discordgo.ApplicationCommand
 			// check if this match's index range conflicts with a previous one
 			// if so, prioritize previously registered option and skip
 			do_entry := true
-			for _, prm_entry := range param_entries {
+			for _, prm_entry := range prmt_all {
 				if idx_start <= prm_entry.IndexEndsAt && prm_entry.IndexStartsAt <= idx_end {
 					do_entry = false
 					break
 				}
 			}
 			if do_entry {
-				param_entries = append(param_entries, &optionParameter{
+				prmt_all = append(prmt_all, &optionParameter{
 					IndexStartsAt: idx_start,
 					IndexEndsAt:   idx_end,
 					Content:       rmatch_str[i],
@@ -171,23 +205,28 @@ func chcmd_get_options(content string) (map[string]*discordgo.ApplicationCommand
 		}
 	}
 	// sort low to high
-	sort.Slice(param_entries, func(a, b int) bool {
-		return param_entries[a].IndexStartsAt < param_entries[b].IndexStartsAt
+	sort.Slice(prmt_all, func(a, b int) bool {
+		return prmt_all[a].IndexStartsAt < prmt_all[b].IndexStartsAt
 	})
+	prmt_dirty := []*optionParameter{}
+	prmt_clean := []*optionParameter{}
 	// make sure that our clean parameters go after
 	// our dirty ones, otherwise, return an error
 	is_dirty := true
-	for _, parameter := range param_entries {
+	for _, parameter := range prmt_all {
 		if parameter.Type == optParameterCleanType {
 			is_dirty = false
 		} else if parameter.Type == optParameterDirtyType && !is_dirty {
-			return nil, fmt.Errorf("dirty options should always go before clean ones")
+			return nil, nil, fmt.Errorf("dirty parameters should always go before clean ones")
+		}
+		switch parameter.Type {
+		case optParameterDirtyType:
+			prmt_dirty = append(prmt_dirty, parameter)
+		case optParameterCleanType:
+			prmt_clean = append(prmt_clean, parameter)
 		}
 	}
-	// pack our parameters into proper option arguments
-	for _, parameter := range param_entries {
-	}
-	return options_map, nil
+	return prmt_dirty, prmt_clean, nil
 }
 
 type optRegex struct {
@@ -206,9 +245,8 @@ const optParameterCleanType = 1
 const optParameterDirtyType = 0
 
 // options' values have to match their assigned
-//
-//	type or else we'll get struck with a panic error.
-func pair_cmdoption_type(v string, t discordgo.ApplicationCommandOptionType) any {
+// type or else we'll get struck with a panic error.
+func optcmd_parse_valtype(v string, t discordgo.ApplicationCommandOptionType) any {
 	switch t {
 	case discordgo.ApplicationCommandOptionInteger:
 		fv, _ := strconv.Atoi(v)
