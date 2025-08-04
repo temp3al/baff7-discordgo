@@ -88,6 +88,7 @@ func handle_command_chat(session *discordgo.Session, message *discordgo.MessageC
 			break
 		}
 	}
+	content, _ = strings.CutPrefix(content, " ")
 	if !success {
 		return
 	}
