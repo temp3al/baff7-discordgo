@@ -4,70 +4,72 @@
 package ping
 
 import (
-	"discordgo-bot/core/cmds"
+	"discordgo-bot/core/commands"
 	"fmt"
 	"log"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-func handlecommand(
-	cdata *cmds.CommandCreateData,
-	parameters map[string]*discordgo.ApplicationCommandInteractionDataOption,
-) {
-	msg_desc := fmt.Sprintf("# Pong! 🏓\n-# %dms response time", cdata.Session.HeartbeatLatency().Milliseconds())
+func do_command_message(data *commands.DataMessage) {
+	embed := create_embed(data.Session)
 
-	embed := &discordgo.MessageEmbed{
-		Title:       " ",
-		Description: msg_desc,
-		Color:       0x41aa0e,
-	}
-
-	err := fmt.Errorf("message & interaction creates are inactive")
-	switch cdata.GetActive() {
-	case cmds.CreateMessageType:
-		_, err = cdata.Session.ChannelMessageSendComplex(
-			cdata.Message.ChannelID,
-			&discordgo.MessageSend{
-				Embed: embed,
-				Reference: &discordgo.MessageReference{
-					MessageID: cdata.Message.ID,
-					ChannelID: cdata.Message.ChannelID,
-					GuildID:   cdata.Message.GuildID,
-				},
-				AllowedMentions: &discordgo.MessageAllowedMentions{
-					RepliedUser: false,
-				},
+	_, err := data.Session.ChannelMessageSendComplex(
+		data.Message.ChannelID,
+		&discordgo.MessageSend{
+			Embed: embed,
+			Reference: &discordgo.MessageReference{
+				MessageID: data.Message.ID,
+				ChannelID: data.Message.ChannelID,
+				GuildID:   data.Message.GuildID,
 			},
-		)
-	case cmds.CreateInteractionType:
-		err = cdata.Session.InteractionRespond(cdata.Interaction.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Embeds: []*discordgo.MessageEmbed{embed},
+			AllowedMentions: &discordgo.MessageAllowedMentions{
+				RepliedUser: false,
 			},
 		},
-		)
-	}
+	)
 	if err != nil {
-		log.Println(err)
+		log.Panic(err)
 	}
 }
 
+func do_command_interaction(data *commands.DataInteraction) {
+	embed := create_embed(data.Session)
+
+	err := data.Session.InteractionRespond(data.Interaction.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{embed},
+		},
+	})
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+// create an embed using the provided session
+func create_embed(s *discordgo.Session) *discordgo.MessageEmbed {
+	var embed *discordgo.MessageEmbed
+	var em_description string = fmt.Sprintf(
+		"# Pong! 🏓\n-# %dms response time",
+		s.HeartbeatLatency().Milliseconds(),
+	)
+
+	embed = &discordgo.MessageEmbed{
+		Title:       " ",
+		Description: em_description,
+		Color:       0x41aa0e,
+	}
+	return embed
+}
+
 func init() {
-	cmds.Register(cmds.CommandEntry{
+	commands.Register(commands.CommandEntry{
 		AppCommand: discordgo.ApplicationCommand{
 			Name:        "ping",
 			Description: "Pong! Responds with response latency.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "page",
-					Description: "Page to display.",
-					Type:        discordgo.ApplicationCommandOptionInteger,
-					Required:    false,
-				},
-			},
 		},
-		HandleFunc: handlecommand,
+		FuncMessage:     do_command_message,
+		FuncInteraction: do_command_interaction,
 	})
 }

@@ -4,10 +4,12 @@
 package help
 
 import (
-	"discordgo-bot/core/cmds"
+	"discordgo-bot/core/commands"
 	"fmt"
 	"log"
 	"math"
+	"strconv"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -17,94 +19,106 @@ var (
 	//
 	// Higher is more information at the cost of chat visibility.
 	commands_per_page int = 11
+	//
+	em_cmdprefix string = "/"
 )
 
-func handlecommand(
-	cdata *cmds.CommandCreateData,
-	parameters map[string]*discordgo.ApplicationCommandInteractionDataOption,
-) {
-	cmd_prefix := "/" // core.Prefixes[0]
-	cmd_map := cmds.GetCommandEntries()
-
-	page_max := int(math.Ceil(
-		float64(len(cmd_map)) /
-			float64(commands_per_page),
-	))
-	page_active := 1
-	// pull our page parameter
-	if pmt, ok := parameters["page"]; ok {
-		page_active = max(1, min(page_max, int(pmt.IntValue())))
+func do_command_message(data *commands.DataMessage) {
+	parameters := strings.Split(data.Content, " ")
+	page, err := strconv.Atoi(parameters[0])
+	if err != nil {
+		page = 1
 	}
 
-	str_title := "Command List"
+	embed := create_embed(page)
+
+	_, err = data.Session.ChannelMessageSendComplex(
+		data.Message.ChannelID,
+		&discordgo.MessageSend{
+			Embed: embed,
+			Reference: &discordgo.MessageReference{
+				MessageID: data.Message.ID,
+				ChannelID: data.Message.ChannelID,
+				GuildID:   data.Message.GuildID,
+			},
+			AllowedMentions: &discordgo.MessageAllowedMentions{
+				RepliedUser: false,
+			},
+		},
+	)
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+func do_command_interaction(data *commands.DataInteraction) {
+	var page int = int(data.GetOptions()["page"].IntValue())
+
+	embed := create_embed(page)
+	err := data.Session.InteractionRespond(data.Interaction.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Embeds: []*discordgo.MessageEmbed{embed},
+		},
+	},
+	)
+	if err != nil {
+		log.Panic(err)
+	}
+}
+
+func create_embed(page int) *discordgo.MessageEmbed {
+	allcommands := commands.GetCommandEntries()
+	var page_active int = 1
+	page_max := int(
+		math.Ceil(float64(len(allcommands)) /
+			float64(commands_per_page)),
+	)
+	page_active = max(1, min(page_max, page))
+
 	// generate description from core
-	str_desc := ""
+	em_description := ""
 	i := 0 // ranging maps doesnt return a len variable so...
-	for _, cmd := range cmd_map {
+	for _, cmd := range allcommands {
 		i++
 		if i < commands_per_page*(page_active-1) { // offset our command list using help_page & commands_per_page
 			continue
-		} else if i+1 > commands_per_page*page_active { // stop generating if we go past our cmds limit.
+		} else if i+1 > commands_per_page*page_active { // stop generating if we go past our cmds limit
 			break
 		}
+
+		var str_options string
 		// generate usage line using command options
-		str_pmtrs := ""
-		cmd_options := cmd.AppCommand.Options
-		for _, param := range cmd_options {
-			str_pmtrs += fmt.Sprintf(" *[%s]*", param.Name)
+		command_options := cmd.AppCommand.Options
+		for _, option := range command_options {
+			str_options += fmt.Sprintf(" *[%s]*", option.Name)
 		}
-		str_desc += fmt.Sprintf(
-			"%s%s%s\n-# %s\n\n", cmd_prefix, cmd.AppCommand.Name, str_pmtrs, cmd.AppCommand.Description,
+		em_description += fmt.Sprintf(
+			"%s%s%s\n-# %s\n\n",
+			em_cmdprefix, cmd.AppCommand.Name,
+			str_options, cmd.AppCommand.Description,
 		)
 	}
 	// footer showing our active page
-	hcmd_footer := fmt.Sprintf(
+	em_footer := fmt.Sprintf(
 		"Page %d of %d",
 		page_active,
 		page_max,
 	)
+
 	embed := &discordgo.MessageEmbed{
-		Title:       str_title,
-		Description: str_desc,
+		Title:       "Available Commands:",
+		Description: em_description,
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: hcmd_footer,
+			Text: em_footer,
 		},
 		Color: 0x41aa0e,
 	}
-
-	err := fmt.Errorf("message & interaction creates are inactive")
-	switch cdata.GetActive() {
-	case cmds.CreateMessageType:
-		_, err = cdata.Session.ChannelMessageSendComplex(
-			cdata.Message.ChannelID,
-			&discordgo.MessageSend{
-				Embed: embed,
-				Reference: &discordgo.MessageReference{
-					MessageID: cdata.Message.ID,
-					ChannelID: cdata.Message.ChannelID,
-					GuildID:   cdata.Message.GuildID,
-				},
-				AllowedMentions: &discordgo.MessageAllowedMentions{
-					RepliedUser: false,
-				},
-			},
-		)
-	case cmds.CreateInteractionType:
-		err = cdata.Session.InteractionRespond(cdata.Interaction.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Embeds: []*discordgo.MessageEmbed{embed},
-			},
-		},
-		)
-	}
-	if err != nil {
-		log.Println(err)
-	}
+	return embed
 }
 
 func init() {
-	cmds.Register(cmds.CommandEntry{
+	commands.Register(commands.CommandEntry{
 		AppCommand: discordgo.ApplicationCommand{
 			Name:        "help",
 			Description: "Show a list and usage of available commands.",
@@ -117,6 +131,7 @@ func init() {
 				},
 			},
 		},
-		HandleFunc: handlecommand,
+		FuncMessage:     do_command_message,
+		FuncInteraction: do_command_interaction,
 	})
 }
