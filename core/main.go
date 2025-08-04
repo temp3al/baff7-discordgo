@@ -2,6 +2,7 @@
 package core
 
 import (
+	"discordgo-bot/baff"
 	_ "discordgo-bot/commands"
 	"discordgo-bot/core/commands"
 	"discordgo-bot/globals"
@@ -14,6 +15,7 @@ func Start(session *discordgo.Session) {
 	globals.Running = true
 	// execute external routines
 	commands.InitCommands()
+	baff.Start() // baff!
 }
 
 func Stop() {

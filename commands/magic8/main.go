@@ -16,13 +16,21 @@ import (
 // this folder for cleaner customization?
 var (
 	resp_positive = []string{
-		"Yes!",
+		"Sure",
+		"Yea",
+		"I think so",
+		"Thats likely I think",
 	}
 	resp_neutral = []string{
-		"Maybe...",
+		"Hmm",
+		"Im not quite sure",
+		"Eh,, I dont know",
 	}
 	resp_negative = []string{
-		"No.",
+		"Probably not",
+		"Nooo",
+		"I dont think so",
+		"I wouldnt say that",
 	}
 )
 
@@ -30,11 +38,11 @@ func do_command_message(data *commands.DataMessage) {
 	question := data.Content
 	author := data.Message.Author.DisplayName()
 
-	embed := create_embed(question, author)
+	content := create_content(question, author)
 	_, err := data.Session.ChannelMessageSendComplex(
 		data.Message.ChannelID,
 		&discordgo.MessageSend{
-			Embed: embed,
+			Content: content,
 			Reference: &discordgo.MessageReference{
 				MessageID: data.Message.ID,
 				ChannelID: data.Message.ChannelID,
@@ -54,11 +62,11 @@ func do_command_interaction(data *commands.DataInteraction) {
 	question := data.GetOptions()["question"].StringValue()
 	author := data.Interaction.Member.User.DisplayName()
 
-	embed := create_embed(question, author)
+	content := create_content(question, author)
 	err := data.Session.InteractionRespond(data.Interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Embeds: []*discordgo.MessageEmbed{embed},
+			Content: content,
 		},
 	},
 	)
@@ -67,30 +75,31 @@ func do_command_interaction(data *commands.DataInteraction) {
 	}
 }
 
-func create_embed(question string, user string) *discordgo.MessageEmbed {
-	var embed *discordgo.MessageEmbed
+func create_content(question string, user string) string {
+	var content string
 
 	// pick a response!
 	r_ipool := [][]string{resp_positive, resp_neutral, resp_negative}
 	r_spool := r_ipool[rand.IntN(len(r_ipool))]
 	response := r_spool[rand.IntN(len(r_spool))]
-
-	em_content := fmt.Sprintf(
-		"**%s's question:** %s\n**answer:** %s",
-		user, question, response,
-	)
-	embed = &discordgo.MessageEmbed{
-		Title:       "8 Ball",
-		Description: em_content,
+	if rand.IntN(10) >= 7 {
+		response += ",,,"
+	}
+	if rand.IntN(10) >= 3 {
+		response += "7"
 	}
 
-	return embed
+	content = fmt.Sprintf(
+		"-# %s asked: %s\n%s",
+		user, question, response,
+	)
+	return content
 }
 
 func init() {
 	commands.Register(commands.CommandEntry{
 		AppCommand: discordgo.ApplicationCommand{
-			Name:        "8ball",
+			Name:        "ask",
 			Description: "Responds to a yes / no question.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
