@@ -1,22 +1,23 @@
 // Package provides Discord bot's core functionality.
 package core
 
-import "github.com/bwmarrin/discordgo"
+import (
+	_ "discordgo-bot/commands"
+	"discordgo-bot/core/commands"
+	"discordgo-bot/globals"
 
-var (
-	CoreSession *discordgo.Session
-	is_running  bool
+	"github.com/bwmarrin/discordgo"
 )
 
 func Start(session *discordgo.Session) {
-	CoreSession = session
-	is_running = true
+	globals.Session = session
+	globals.Running = true
+	// execute external routines
+	commands.InitCommands()
 }
 
 func Stop() {
-	is_running = false
-}
-
-func IsRunning() bool {
-	return is_running
+	// shutdown externals before closing session...
+	commands.ClearSlashCommands()
+	globals.Running = false
 }

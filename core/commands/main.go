@@ -2,7 +2,7 @@
 package commands
 
 import (
-	"discordgo-bot/core"
+	"discordgo-bot/globals"
 	"fmt"
 	"log"
 	"strings"
@@ -122,7 +122,7 @@ func Register(cmd CommandEntry) {
 	cmd_name := cmd.AppCommand.Name
 	// only allow registering commands before the bot starts operations
 	// it's overall a pretty bad practice to do otherwise
-	if core.IsRunning() {
+	if globals.IsRunning() {
 		log.Println("can't register commands on runtime.")
 		return
 	}
@@ -145,23 +145,25 @@ func GetCommandEntries() map[string]*CommandEntry {
 
 // Start the creation and listening for commands.
 func InitCommands() {
+	s := globals.Session
+
 	if !ENABLE_CHAT_COMMANDS && !ENABLE_SLASH_COMMANDS {
 		return
 	}
 	if ENABLE_SLASH_COMMANDS {
 		log.Println("Registering slash commands...")
 		for i, ecmd := range command_map {
-			cmd, err := core.CoreSession.ApplicationCommandCreate(core.CoreSession.State.User.ID, "", &ecmd.AppCommand)
+			cmd, err := s.ApplicationCommandCreate(s.State.User.ID, "", &ecmd.AppCommand)
 			if err != nil {
 				log.Panicf("Failed to register command \"%v\": %v", ecmd.AppCommand.Name, err)
 			}
 			regcmd_map[i] = cmd
 		}
-		core.CoreSession.AddHandler(handle_command_slash)
+		s.AddHandler(handle_command_slash)
 		log.Print("Slash command registration successful!")
 	}
 	if ENABLE_CHAT_COMMANDS {
-		core.CoreSession.AddHandler(handle_command_chat)
+		s.AddHandler(handle_command_chat)
 		log.Println("Listening for commands in chat!")
 	}
 }
@@ -171,10 +173,12 @@ func InitCommands() {
 // NOTE: Bots are rate limited to making 200 app commands per day, per guild.
 // Don't use on a big command list unless you need to remove them all, or for cache reasons.
 func ClearSlashCommands() {
+	s := globals.Session
+
 	if CLEAR_SLASH_ON_EXIT {
 		log.Println("Removing commands...")
 		for _, v := range regcmd_map {
-			err := core.CoreSession.ApplicationCommandDelete(core.CoreSession.State.User.ID, "", v.ID)
+			err := s.ApplicationCommandDelete(s.State.User.ID, "", v.ID)
 			if err != nil {
 				log.Panicf("Cannot delete '%v' command: %v", v.Name, err)
 			}

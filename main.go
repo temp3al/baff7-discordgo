@@ -2,7 +2,6 @@ package main
 
 import (
 	"discordgo-bot/core"
-	cmds "discordgo-bot/core/commands"
 	"discordgo-bot/terminal"
 	"discordgo-bot/utils/ucolor"
 	"fmt"
@@ -12,11 +11,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-
-	// commands import
-	_ "discordgo-bot/commands"
-	// external imports
-	_ "discordgo-bot/external"
 )
 
 var (
@@ -43,15 +37,13 @@ func main() {
 	session.Open()
 	// shutdown processes when exiting
 	shutfunc := func() {
-		cmds.ClearSlashCommands()
 		log.Println("Quitting...")
-		session.Close()
 		core.Stop()
+		session.Close()
 	}
 	defer shutfunc()
 	// direct to /core
 	core.Start(session)
-	cmds.InitCommands()
 
 	log.Print("Session successfully launched!")
 	// start a terminal cycle
