@@ -5,6 +5,7 @@ import (
 	"discordgo-bot/globals"
 	"fmt"
 	"log"
+	"slices"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -37,6 +38,7 @@ type CommandEntry struct {
 	//
 	// Commands will be automatically generate from it.
 	AppCommand discordgo.ApplicationCommand
+	Aliases    []string // Alternate names usable via chat commands.
 	// Command function to call when invoked via chat message.
 	FuncMessage func(data *DataMessage)
 	// Command function to call when invoked via slash command.
@@ -113,6 +115,10 @@ func find_command_entry(content string) (*CommandEntry, bool) {
 	cmdstr := strings.Split(content, " ")[0]
 	for _, cmd_entry := range command_map {
 		if cmdstr == cmd_entry.AppCommand.Name {
+			return cmd_entry, true
+		}
+		// check for aliases too
+		if slices.Contains(cmd_entry.Aliases, cmdstr) {
 			return cmd_entry, true
 		}
 	}
