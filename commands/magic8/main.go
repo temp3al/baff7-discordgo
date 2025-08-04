@@ -36,19 +36,22 @@ var (
 
 func do_command_message(data *commands.DataMessage) {
 	question := data.Content
-	author := data.Message.Author.DisplayName()
+	author := data.Message.Author.ID
 
 	content := create_content(question, author)
 	_, err := data.Session.ChannelMessageSendComplex(
 		data.Message.ChannelID,
 		&discordgo.MessageSend{
 			Content: content,
-			Reference: &discordgo.MessageReference{
-				MessageID: data.Message.ID,
-				ChannelID: data.Message.ChannelID,
-				GuildID:   data.Message.GuildID,
-			},
+			// Responding directly to the message while
+			// including the question is kind of redundant?
+			//Reference: &discordgo.MessageReference{
+			//	MessageID: data.Message.ID,
+			//	ChannelID: data.Message.ChannelID,
+			//	GuildID:   data.Message.GuildID,
+			//},
 			AllowedMentions: &discordgo.MessageAllowedMentions{
+				Users:       []string{},
 				RepliedUser: false,
 			},
 		},
@@ -60,13 +63,17 @@ func do_command_message(data *commands.DataMessage) {
 
 func do_command_interaction(data *commands.DataInteraction) {
 	question := data.GetOptions()["question"].StringValue()
-	author := data.Interaction.Member.User.DisplayName()
+	author := data.Interaction.Member.User.ID
 
 	content := create_content(question, author)
 	err := data.Session.InteractionRespond(data.Interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: content,
+			AllowedMentions: &discordgo.MessageAllowedMentions{
+				Users:       []string{},
+				RepliedUser: false,
+			},
 		},
 	},
 	)
@@ -90,7 +97,7 @@ func create_content(question string, user string) string {
 	}
 
 	content = fmt.Sprintf(
-		"-# %s asked: %s\n%s",
+		"-# <@%s> asked: %s\n%s",
 		user, question, response,
 	)
 	return content

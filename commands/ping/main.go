@@ -58,7 +58,7 @@ func create_embed(s *discordgo.Session) *discordgo.MessageEmbed {
 	embed = &discordgo.MessageEmbed{
 		Title:       " ",
 		Description: em_description,
-		Color:       0x41aa0e,
+		Color:       0xd54753,
 	}
 	return embed
 }

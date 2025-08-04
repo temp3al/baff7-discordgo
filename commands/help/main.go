@@ -112,7 +112,7 @@ func create_embed(page int) *discordgo.MessageEmbed {
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: em_footer,
 		},
-		Color: 0x41aa0e,
+		Color: 0xd54753,
 	}
 	return embed
 }
