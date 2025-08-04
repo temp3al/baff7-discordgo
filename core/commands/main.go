@@ -18,7 +18,15 @@ var (
 	// NOTE: Bots are rate limited to making 200 app commands per day, per guild.
 	// Don't use on a big command list unless you need to remove them all, or for cache reasons.
 	CLEAR_SLASH_ON_EXIT bool = false
-	ChatPrefix               = []string{"+"}
+	ChatPrefix               = []string{
+		"b!",
+		"baff, ",
+		"baff,",
+		"Baff, ",
+		"Baff,",
+		"BAFF, ",
+		"BAFF,",
+	}
 
 	command_map = map[string]*CommandEntry{}
 	regcmd_map  = map[string]*discordgo.ApplicationCommand{}
