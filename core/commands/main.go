@@ -3,9 +3,7 @@ package commands
 
 import (
 	"discordgo-bot/globals"
-	"fmt"
 	"log"
-	"slices"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -73,48 +71,54 @@ func handle_command_chat(session *discordgo.Session, message *discordgo.MessageC
 	// command to execute
 	var command *CommandEntry
 	var ok bool
-	var success bool
 
 	// confirm we're running a command by checking for prefixes
 	// sanitize "content" if match is found
 	for _, pref := range ChatPrefix {
 		if content, ok = strings.CutPrefix(message.Content, pref); ok {
-			// fetch for a command and trim from our content
-			if command, ok = find_command_entry(content); !ok {
-				return
-			}
-			content, success = strings.CutPrefix(
-				content,
-				fmt.Sprintf("%v", command.AppCommand.Name),
-			)
+			// fetch for a command, replace content for trimmed
+			command, ok, content = find_command_entry(content)
 			break
 		}
 	}
-	content, _ = strings.CutPrefix(content, " ")
-	if !success {
+	if !ok {
 		return
 	}
 
 	command.FuncMessage(&DataMessage{session, message, content})
 }
 
-func find_command_entry(content string) (*CommandEntry, bool) {
+func find_command_entry(content string) (*CommandEntry, bool, string) {
 	if len(content) < 1 {
 		log.Fatalf("can't run 'chcmd_match_command' with an empty string")
-		return nil, false
+		return nil, false, ""
 	}
+	var trimmed string = content
+	var to_trim string
+	var command *CommandEntry
+
 	// dissect and use the first word from our content string
 	cmdstr := strings.Split(content, " ")[0]
-	for _, cmd_entry := range command_map {
-		if cmdstr == cmd_entry.AppCommand.Name {
-			return cmd_entry, true
+	for _, command_entry := range command_map {
+		command_name := command_entry.AppCommand.Name
+		if cmdstr == command_name {
+			command = command_entry
+			to_trim = command_name
 		}
 		// check for aliases too
-		if slices.Contains(cmd_entry.Aliases, cmdstr) {
-			return cmd_entry, true
+		for _, alias := range command_entry.Aliases {
+			if cmdstr == alias {
+				command = command_entry
+				to_trim = alias
+			}
 		}
 	}
-	return nil, false
+	if command != nil {
+		trimmed = strings.TrimSuffix(trimmed, to_trim)
+		trimmed = strings.TrimSpace(trimmed)
+		return command, true, trimmed
+	}
+	return nil, false, ""
 }
 
 func handle_command_slash(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
