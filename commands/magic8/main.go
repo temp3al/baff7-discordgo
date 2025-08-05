@@ -117,6 +117,8 @@ func init() {
 				},
 			},
 		},
+		Aliases: []string{"answer", "question", "respond"},
+
 		FuncMessage:     do_command_message,
 		FuncInteraction: do_command_interaction,
 	})

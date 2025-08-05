@@ -78,6 +78,7 @@ func handle_baff_react(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+// React to all messages in a specific channel with gimblo emotes.
 func handle_gimblo_gang(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.Bot { // ignore bots
 		return
