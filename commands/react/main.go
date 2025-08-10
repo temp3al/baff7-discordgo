@@ -31,7 +31,7 @@ func do_command_message(data *commands.DataMessage) {
 	var sel string
 	parameters := strings.Split(data.Content, " ")
 	if len(parameters) >= 1 {
-		sel = strings.ToLower(parameters[0])
+		sel = strings.ToLower(parameters[1])
 	}
 
 	embed := create_embed(sel)

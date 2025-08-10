@@ -26,6 +26,10 @@ func Start() {
 			},
 		},
 	)
+	// ./chatbot.go
+	globals.Session.AddHandler(handle_chatbot_read_message)
+	// ./countchk.go
+	globals.Session.AddHandler(handle_count_read_message)
 }
 
 // React with a Baffuinie7 related emoji if a sent message contains a Baffuinie7 related keyword.
