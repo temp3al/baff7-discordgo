@@ -127,10 +127,10 @@ func handle_readmessage_counting_mistake(s *discordgo.Session, m *discordgo.Mess
 		return
 	}
 	// verify we meet the permissions to lock down the channel
-	permissions, _ := s.State.UserChannelPermissions(s.State.User.ID, m.ChannelID)
-	if permissions&discordgo.PermissionManageChannels == 0 {
-		return
-	}
+	//permissions, _ := s.State.UserChannelPermissions(s.State.User.ID, m.ChannelID)
+	//if permissions&discordgo.PermissionManageChannels == 0 {
+	//	return
+	//}
 
 	var match []string
 
@@ -149,13 +149,8 @@ func handle_readmessage_counting_mistake(s *discordgo.Session, m *discordgo.Mess
 		// match: ["⚠️ @user You have used <n> guild save! There are <n>/<n> guild saves left. <motive>" "@user" "<n>" "<n>" "<n>" "<motive>"]
 		user = match[1]
 		saves = match[2]
-		saves_parsed, err := strconv.ParseFloat(saves, 64)
+		//saves_parsed, err := strconv.ParseFloat(saves, 64)
 		response = utils.RandomStringFromList(response_usesave_guild)
-		// lock down when under 1 guild save
-		if err == nil && saves_parsed <= 1 {
-			// todo: I don't understand how channel permission overrides work at all, and
-			// 2:50am me is NOT in the mood to read through the docs.
-		}
 	}
 
 	map_replace := map[string]string{
