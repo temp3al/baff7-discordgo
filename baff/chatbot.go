@@ -1,3 +1,4 @@
+// Package providing chatbot communication via ollama.
 package baff
 
 import (
@@ -7,11 +8,22 @@ import (
 )
 
 var (
-	CHAT_CHANNEL   string = "1388969389872906290"
+	CHAT_CHANNEL string = "1388969389872906290"
+	OLLAMA_MODEL string
+
 	chatlog_latest string
+	chat_data      map[string]channel_chatdata // "ChannelID": channel_chatdata
 )
 
-func handle_chatbot_read_message(s *discordgo.Session, m *discordgo.MessageCreate) {
+type channel_chatdata struct {
+}
+
+// Perform a request to our running ollama server.
+func ollama_api_perform_request() {
+
+}
+
+func handle_readmessage_chatbot(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// follow CHAT_CHANNEL ID only & ignore our own messages
 	if m.Author.ID == s.State.User.ID || m.ChannelID != CHAT_CHANNEL {
 		return
@@ -21,17 +33,23 @@ func handle_chatbot_read_message(s *discordgo.Session, m *discordgo.MessageCreat
 		m.Author.DisplayName(),
 		m.Content,
 	)
-	s.ChannelMessageSend(m.ChannelID, chatlog_latest)
 }
 
-func announce_publish() {
+//
+//
+//
+
+// Add our newly received message into our query string, start or reset a timer before we start our request.
+func chatbot_process_message() {
 
 }
 
-func ollama_request() {
+// Use our final message to send a request to our ollama server.
+func chatbot_start_request() {
 
 }
 
-// Send a discord message in the provided channel containing our response.
-func send_message() {
+// Send a chat message to the desired channel containing our ollama response.
+func chatbot_finalize() {
+
 }

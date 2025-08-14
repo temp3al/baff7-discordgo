@@ -2,7 +2,9 @@
 package commands
 
 import (
+	"discordgo-bot/baff"
 	"discordgo-bot/globals"
+	"discordgo-bot/utils"
 	"log"
 	"strings"
 
@@ -93,7 +95,13 @@ func handle_command_chat(session *discordgo.Session, message *discordgo.MessageC
 		return
 	}
 
-	command.FuncMessage(&DataMessage{session, message, content})
+	baff.TypeBeforeFunction(
+		session,
+		message.ChannelID,
+		utils.RandFloat(0.7, 1.22),
+		func() { command.FuncMessage(&DataMessage{session, message, content}) },
+	)
+
 }
 
 func find_command_entry(content string) (*CommandEntry, bool, string) {

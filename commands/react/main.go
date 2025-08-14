@@ -30,7 +30,7 @@ var (
 func do_command_message(data *commands.DataMessage) {
 	var sel string
 	parameters := strings.Split(data.Content, " ")
-	if len(parameters) >= 1 {
+	if len(parameters) > 1 {
 		sel = strings.ToLower(parameters[1])
 	}
 
